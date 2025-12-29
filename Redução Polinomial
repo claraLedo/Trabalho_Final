@@ -1,0 +1,74 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
+# Grafo Original
+
+G = nx.Graph()
+
+# Criando um ciclo simples: 0 - 1 - 2 - 3 - 0
+arestas_ciclo = [(0, 1), (1, 2), (2, 3), (3, 0)]
+G.add_edges_from(arestas_ciclo)
+
+# Grafo reduzido G'
+
+G_reduzido = nx.Graph()
+
+# Vértice escolhido para "quebrar" o ciclo
+v = 0
+
+# Novos vértices
+v_in = "v_in"
+v_out = "v_out"
+
+# Adiciona os outros vértices
+for u in G.nodes():
+    if u != v:
+        G_reduzido.add_node(u)
+
+G_reduzido.add_node(v_in)
+G_reduzido.add_node(v_out)
+
+# Reconecta as arestas
+for (u, w) in G.edges():
+    if u == v:
+        G_reduzido.add_edge(v_in, w)
+    elif w == v:
+        G_reduzido.add_edge(v_out, u)
+    else:
+        G_reduzido.add_edge(u, w)
+
+# Desenho
+
+plt.figure(figsize=(10, 4))
+
+# Grafo original
+plt.subplot(1, 2, 1)
+pos_G = nx.circular_layout(G)
+nx.draw(
+    G,
+    pos_G,
+    with_labels=True,
+    node_color="lightblue",
+    node_size=1200,
+    edgecolors="black"
+)
+plt.title("Grafo Original (Ciclo Hamiltoniano)")
+
+# Grafo reduzido
+plt.subplot(1, 2, 2)
+pos_Gp = nx.spring_layout(G_reduzido, seed=42)
+nx.draw(
+    G_reduzido,
+    pos_Gp,
+    with_labels=True,
+    node_color="lightgreen",
+    node_size=1200,
+    edgecolors="black"
+)
+plt.title("Grafo Reduzido G′ (Caminho Hamiltoniano)")
+
+plt.tight_layout()
+plt.savefig("figura1_reducao_hamiltoniano.png")
+plt.show()
+
+print("Figura 1 gerada e salva como: figura1_reducao_hamiltoniano.png")
