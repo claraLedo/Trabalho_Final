@@ -1,0 +1,121 @@
+import networkx as nx
+import time
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Entrada do Usuário
+print("=== EXPERIMENTO: CAMINHO HAMILTONIANO ===")
+
+densidade = float(input("Digite a densidade do grafo (ex: 0.3 ou 0.5): "))
+
+tamanhos_input = input(
+    "Digite os tamanhos dos grafos separados por vírgula (ex: 6,7,8,9,10): "
+)
+TAMANHOS = [int(x.strip()) for x in tamanhos_input.split(",")]
+
+
+# Backtracking
+def backtracking(G):
+    n = G.number_of_nodes()
+    visitado = [False] * n
+
+    def backtrack(v, cont):
+        if cont == n:
+            return True
+        for u in G.neighbors(v):
+            if not visitado[u]:
+                visitado[u] = True
+                if backtrack(u, cont + 1):
+                    return True
+                visitado[u] = False
+        return False
+
+    visitado[0] = True
+    return backtrack(0, 1)
+
+#PD
+def PD(G):
+    n = G.number_of_nodes()
+
+    adj = [[0]*n for _ in range(n)]
+    for u, v in G.edges():
+        adj[u][v] = 1
+        adj[v][u] = 1
+
+    dp = [[False]*n for _ in range(1 << n)]
+    dp[1][0] = True
+
+    for mask in range(1 << n):
+        for u in range(n):
+            if dp[mask][u]:
+                for v in range(n):
+                    if adj[u][v] and not (mask & (1 << v)):
+                        dp[mask | (1 << v)][v] = True
+
+    full = (1 << n) - 1
+    return any(dp[full][v] for v in range(n))
+
+# Execução
+
+resultados = []
+
+print("\nExecutando experimentos...\n")
+
+for n in TAMANHOS:
+    print(f"Grafo com {n} vértices")
+
+    G = nx.gnp_random_graph(n, densidade)
+
+    inicio = time.time()
+    resultado_bt = backtracking(G)
+    tempo_bt = time.time() - inicio
+
+    inicio = time.time()
+    resultado_dp = PD(G)
+    tempo_dp = time.time() - inicio
+
+    resultados.append([n, tempo_bt, tempo_dp])
+
+    print(f"  Backtracking: {resultado_bt} | Tempo: {tempo_bt:.6f}s")
+    print(f"  DP Bitmask : {resultado_dp} | Tempo: {tempo_dp:.6f}s\n")
+
+# Resultados
+
+df = pd.DataFrame(
+    resultados,
+    columns=["Vertices", "Backtracking (s)", "DP Bitmask (s)"]
+)
+
+df.to_csv("resultados_hamiltoniano.csv", index=False)
+
+print("Tabela salva em: resultados_hamiltoniano.csv")
+
+# Gráfico
+
+plt.figure()
+plt.plot(df["Vertices"], df["Backtracking (s)"], marker="o", label="Backtracking")
+plt.plot(df["Vertices"], df["DP Bitmask (s)"], marker="o", label="DP Bitmask")
+plt.xlabel("Número de vértices")
+plt.ylabel("Tempo de execução (segundos)")
+plt.title("Tempo de Execução – Caminho Hamiltoniano")
+plt.legend()
+plt.grid(True)
+plt.savefig("grafico_tempo_execucao.png")
+plt.show()
+
+
+# Tabela
+fig, ax = plt.subplots()
+ax.axis("off")
+tabela = ax.table(
+    cellText=df.round(6).values,
+    colLabels=df.columns,
+    loc="center"
+)
+tabela.scale(1, 1.5)
+plt.title("Resultados Experimentais")
+plt.savefig("tabela_resultados.png")
+plt.show()
+
+
+print("\n=== FIM DOS EXPERIMENTOS ===")
